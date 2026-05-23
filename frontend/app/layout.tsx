@@ -15,6 +15,8 @@ export const metadata: Metadata = {
     "Production-grade SaaS analytics platform. Ingest, process, and visualize event data in real-time. Built for scale.",
 };
 
+import AuthListener from "@/components/AuthListener";
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -27,6 +29,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} antialiased min-h-screen text-[#192837]`}>
+        <AuthListener />
         <video
           autoPlay
           muted
