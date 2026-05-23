@@ -22,19 +22,30 @@ export default function SettingsPage() {
 
   // Dropdown State
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [loadingMembers, setLoadingMembers] = useState(true);
 
   useEffect(() => {
     setMounted(true);
     const active = localStorage.getItem("activeDashboard");
     setActiveDashboard(active);
-    fetchTeamMembers();
+    fetchTeamMembers(active);
 
     const subscription = supabase.channel("team_members_changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "team_members" }, payload => {
+        const ev = payload.new as any;
         if (payload.eventType === "INSERT") {
-          setTeamMembers(prev => [...prev, payload.new]);
+          if (active) {
+            if (ev.dashboard !== active) return;
+          } else {
+            if (ev.dashboard) return;
+          }
+          setTeamMembers(prev => {
+            // Remove virtual owner if real owner is inserted
+            const filtered = prev.filter(m => m.id !== "virtual-owner");
+            return [...filtered, ev];
+          });
         } else if (payload.eventType === "UPDATE") {
-          setTeamMembers(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+          setTeamMembers(prev => prev.map(m => m.id === ev.id ? ev : m));
         } else if (payload.eventType === "DELETE") {
           setTeamMembers(prev => prev.filter(m => m.id !== payload.old.id));
         }
@@ -46,9 +57,27 @@ export default function SettingsPage() {
     };
   }, []);
 
-  const fetchTeamMembers = async () => {
-    const { data } = await supabase.from("team_members").select("*").order("created_at", { ascending: true });
-    if (data) setTeamMembers(data);
+  const fetchTeamMembers = async (active: string | null) => {
+    setLoadingMembers(true);
+    let query = supabase.from("team_members").select("*").order("created_at", { ascending: true });
+    if (active) {
+      query = query.eq("dashboard", active);
+    } else {
+      query = query.is("dashboard", null);
+    }
+    const { data } = await query;
+    let members = data || [];
+    
+    // Always ensure the logged-in user is listed as Owner
+    const userEmail = localStorage.getItem("userEmail") || "admin@example.com";
+    const userName = localStorage.getItem("userName") || "Workspace Owner";
+    
+    if (!members.some(m => m.email === userEmail)) {
+      members = [{ id: "virtual-owner", name: userName, email: userEmail, role: "Owner", org_id: DEFAULT_ORG_ID, dashboard: active }, ...members];
+    }
+    
+    setTeamMembers(members);
+    setLoadingMembers(false);
   };
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -60,7 +89,8 @@ export default function SettingsPage() {
         org_id: DEFAULT_ORG_ID,
         name: inviteName,
         email: inviteEmail,
-        role: inviteRole
+        role: inviteRole,
+        dashboard: activeDashboard || null
       }]);
 
       if (dbError) {
@@ -188,10 +218,13 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-3">
-          {teamMembers.length === 0 && (
+          {loadingMembers && (
             <div className="text-center py-8 text-[#192837]/50 text-sm">Loading team members...</div>
           )}
-          {teamMembers.map((member, index) => (
+          {!loadingMembers && teamMembers.length === 0 && (
+            <div className="text-center py-8 text-[#192837]/50 text-sm">No team members found.</div>
+          )}
+          {!loadingMembers && teamMembers.map((member, index) => (
             <div key={member.id} className="flex items-center justify-between p-4 rounded-xl border border-[#192837]/5 bg-white/40 hover:bg-white/80 transition-colors">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7342E2]/20 to-cyan-500/20 flex items-center justify-center text-[#7342E2] font-bold text-sm">
