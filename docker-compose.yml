@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # FastAPI Backend (Commented out for now, you can run it locally with uvicorn)
+  # api:
+  #   build: ./backend
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - SUPABASE_URL=${SUPABASE_URL}
+  #     - SUPABASE_KEY=${SUPABASE_KEY}
+  #   depends_on:
+  #     - redis
+
+  # Celery Worker (Commented out, can run locally with celery -A app.workers.celery_app worker)
+  # worker:
+  #   build: ./backend
+  #   command: celery -A app.workers.celery_app worker --loglevel=info
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - SUPABASE_URL=${SUPABASE_URL}
+  #     - SUPABASE_KEY=${SUPABASE_KEY}
+  #   depends_on:
+  #     - redis
+
+volumes:
+  redis_data:

@@ -1,0 +1,21 @@
+# Root .gitignore
+
+# Node/Frontend
+node_modules/
+.next/
+out/
+build/
+.env.local
+.env.*
+
+# Python/Backend
+venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache/
+celerybeat-schedule
+*.sqlite3
+
+# Misc
+.DS_Store
