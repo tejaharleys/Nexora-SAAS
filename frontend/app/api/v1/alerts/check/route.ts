@@ -32,8 +32,8 @@ export async function POST(req: Request) {
     
     const TARGET_EMAIL = process.env.ALERT_EMAIL || payloadEmail || 'admin@example.com';
     const now = Date.now();
-    // Rate-limit: only send one alert every 5 minutes
-    if (now - lastAlertSentAt < 5 * 60 * 1000) {
+    // Rate-limit: only send one alert every 10 seconds (for testing purposes)
+    if (now - lastAlertSentAt < 10 * 1000) {
       return NextResponse.json({ skipped: 'cooldown active' }, { headers: corsHeaders });
     }
 
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const { count: total } = await queryTotal;
     const { count: errors } = await queryErrors;
 
-    if (!total || total < 5) {
+    if (!total || total < 1) {
       // Not enough data to evaluate
       return NextResponse.json({ skipped: 'not enough data' }, { headers: corsHeaders });
     }
