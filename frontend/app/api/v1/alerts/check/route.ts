@@ -2,15 +2,13 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Resend } from 'resend';
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // ─── CORS ─────────────────────────────────────────────────────────────────
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
+
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
@@ -23,6 +21,7 @@ let lastAlertSentAt = 0; // Prevent spamming — 1 alert per 5 minutes max
 
 export async function POST(req: Request) {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key");
     let payloadEmail = null;
     let payloadDashboard = null;
     try {

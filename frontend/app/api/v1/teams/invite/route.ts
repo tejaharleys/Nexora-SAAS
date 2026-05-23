@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { Resend } from 'resend';
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
   try {
+    // Initialize Resend dynamically to prevent Next.js build-time execution errors
+    const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_key");
     const { name, email, role, inviterName, workspaceName } = await req.json();
 
     if (!email || !name || !role) {
